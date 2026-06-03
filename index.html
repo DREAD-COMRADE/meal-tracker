@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Meal Tracker"/>
+<meta name="theme-color" content="#0d0d0d"/>
+<meta name="description" content="Track your meals, macros, budget & grocery list"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" type="image/png" href="icon-192.png"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>Nitheesh — Meal Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0d;--bg2:#161616;--bg3:#1e1e1e;--border:#2a2a2a;--border2:#333;
+  --text:#f0f0f0;--muted:#888;--dim:#555;
+  --accent:#c8f135;--accent2:#9dba28;--danger:#ff5555;--warn:#f7c948;--r:10px;--r2:6px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,textarea{font-family:inherit;outline:none}
+.app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+/* Header */
+.header{padding:20px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.header-left h1{font-size:22px;letter-spacing:-0.5px}
+.header-left p{font-size:13px;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace}
+.reset-btn{background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-size:12px;padding:6px 12px;border-radius:var(--r2);transition:all .2s;flex-shrink:0;margin-top:4px;font-family:'DM Mono',monospace}
+.reset-btn:hover{border-color:var(--danger);color:var(--danger)}
+/* Macros */
+.macros{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 20px}
+.macro-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.macro-card.hl{border-color:#2e3d14;background:#131a08}
+.macro-card .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;margin-bottom:6px}
+.macro-card .value{font-size:22px;font-weight:600;font-family:'DM Mono',monospace;color:var(--text)}
+.macro-card.hl .value{color:var(--accent)}
+.macro-card .sub{font-size:11px;color:var(--dim);margin-top:2px;font-family:'DM Mono',monospace}
+.macro-card .bar-wrap{height:3px;background:var(--bg3);border-radius:2px;margin-top:8px;overflow:hidden}
+.macro-card .bar{height:100%;border-radius:2px;background:var(--border2);transition:width .4s ease}
+.macro-card.hl .bar{background:var(--accent)}
+/* Tabs */
+.tabs{display:flex;padding:0 20px;border-bottom:1px solid var(--border);margin-bottom:4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{background:none;color:var(--muted);font-size:13px;font-weight:500;padding:10px 14px;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.content{flex:1;padding:12px 20px 90px}
+.sec-title{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;margin:16px 0 10px}
+/* Meal card */
+.meal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.meal-card.done{border-color:#2e3d14;background:#0e1508}
+.meal-card.done .meal-name{color:var(--accent)}
+.meal-top{display:flex;gap:14px;align-items:flex-start;padding:14px;position:relative;cursor:pointer;user-select:none}
+.chk{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s;cursor:pointer}
+.meal-card.done .chk{background:var(--accent);border-color:var(--accent)}
+.chk-svg{display:none;width:12px;height:12px}
+.meal-card.done .chk-svg{display:block}
+.meal-info{flex:1;min-width:0}
+.meal-header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:3px;padding-right:52px}
+.meal-name{font-size:14px;font-weight:600}
+.meal-time{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;flex-shrink:0}
+.meal-summary{font-size:12px;color:var(--muted);margin-bottom:6px}
+.macro-pills{display:flex;gap:5px;flex-wrap:wrap}
+.pill{font-size:11px;color:var(--dim);font-family:'DM Mono',monospace;background:var(--bg3);padding:2px 8px;border-radius:4px}
+.pill.cal{color:var(--accent);background:#131a08}
+.meal-actions{position:absolute;top:10px;right:10px;display:flex;gap:6px}
+.edit-btn{background:var(--bg3);border:1px solid var(--border);color:var(--dim);font-size:11px;padding:3px 8px;border-radius:4px;font-family:'DM Mono',monospace;transition:all .2s;cursor:pointer}
+.edit-btn:hover{border-color:var(--accent);color:var(--accent)}
+.expand-arrow{font-size:10px;color:var(--dim);transition:transform .25s;display:inline-block;margin-left:6px}
+/* Ingredient breakdown panel */
+.meal-detail{display:none;padding:0 14px 14px 50px;border-top:1px solid var(--border)}
+.meal-detail.open{display:block}
+.ing-table{width:100%;border-collapse:collapse;margin-top:10px}
+.ing-table th{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;text-align:right;padding:0 0 6px;font-weight:500}
+.ing-table th:first-child{text-align:left}
+.ing-table td{font-size:12px;padding:5px 0;border-top:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--muted)}
+.ing-table td:first-child{text-align:left;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px}
+.ing-table td .qty{font-size:11px;color:var(--dim);display:block;margin-top:1px}
+.ing-table tr.total-row td{border-top:2px solid var(--border2);color:var(--text);font-weight:600;padding-top:8px}
+.ing-table tr.total-row td:first-child{color:var(--accent)}
+.ing-table td.cal-col{color:var(--accent)}
+/* Add meal */
+.add-meal-btn{width:100%;padding:11px;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--r);color:var(--muted);font-size:13px;cursor:pointer;transition:all .2s;margin-top:4px;font-family:'DM Mono',monospace}
+.add-meal-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* What-If */
+.whatif-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.whatif-title{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent)}
+.wi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.wi-item{display:flex;flex-direction:column;gap:4px}
+.wi-item label{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.wi-input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-size:14px;font-family:'DM Mono',monospace;padding:7px 10px;transition:border-color .2s}
+.wi-input:focus{border-color:var(--accent)}
+.wi-result{background:#131a08;border:1px solid #2e3d14;border-radius:var(--r2);padding:10px 12px;font-size:13px;color:var(--accent);font-family:'DM Mono',monospace;line-height:1.8;display:none}
+.wi-result.show{display:block}
+.wi-btn{width:100%;padding:9px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);color:var(--text);font-size:13px;transition:all .2s;margin-top:8px}
+.wi-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* Stock */
+.stock-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.stock-label{flex:1;font-size:14px}
+.stock-unit{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.stock-input{width:72px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-size:14px;font-family:'DM Mono',monospace;padding:6px 10px;text-align:right;transition:border-color .2s}
+.stock-input:focus{border-color:var(--accent)}
+.low-badge{font-size:10px;background:#3d1a1a;color:var(--danger);padding:2px 7px;border-radius:4px;font-family:'DM Mono',monospace}
+/* Grocery */
+.grocery-period{display:flex;gap:8px;margin-bottom:14px}
+.period-btn{flex:1;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--muted);font-size:13px;transition:all .2s}
+.period-btn.active{border-color:var(--accent);color:var(--accent);background:#131a08}
+.grocery-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px}
+.gi-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.gi-name{flex:1;font-size:14px;font-weight:500}
+.gi-edit-btn{background:var(--bg3);border:1px solid var(--border);color:var(--dim);font-size:11px;padding:3px 8px;border-radius:4px;font-family:'DM Mono',monospace;transition:all .2s;cursor:pointer;flex-shrink:0}
+.gi-edit-btn:hover{border-color:var(--accent);color:var(--accent)}
+.gi-bottom{display:flex;gap:8px;align-items:center}
+.gi-bottom label{font-size:12px;color:var(--muted);flex:1}
+.price-input{width:80px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-size:13px;font-family:'DM Mono',monospace;padding:5px 8px;text-align:right;transition:border-color .2s}
+.price-input:focus{border-color:var(--accent)}
+.add-grocery-btn{width:100%;padding:11px;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--r);color:var(--muted);font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:14px;font-family:'DM Mono',monospace}
+.add-grocery-btn:hover{border-color:var(--accent);color:var(--accent)}
+.expense-summary{background:#131a08;border:1px solid #2e3d14;border-radius:var(--r);padding:16px;margin-top:14px}
+.exp-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
+.exp-row+.exp-row{border-top:1px solid #1e2d08}
+.exp-key{font-size:13px;color:var(--muted)}
+.exp-val{font-size:14px;font-weight:600;font-family:'DM Mono',monospace;color:var(--accent)}
+.exp-total-row{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:6px;border-top:2px solid #2e3d14}
+.exp-total-key{font-size:14px;font-weight:600}
+.exp-total-val{font-size:20px;font-weight:600;font-family:'DM Mono',monospace;color:var(--accent)}
+/* Budget */
+.budget-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.b-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.b-field label{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.5px}
+.b-input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-size:16px;font-family:'DM Mono',monospace;padding:9px 12px;width:100%;transition:border-color .2s}
+.b-input:focus{border-color:var(--accent)}
+.prog-wrap{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:10px 0 4px}
+.prog-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .4s}
+.prog-fill.warn{background:var(--warn)}
+.prog-fill.danger{background:var(--danger)}
+.b-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.b-row+.b-row{border-top:1px solid var(--border)}
+.b-key{font-size:13px;color:var(--muted)}
+.b-val{font-size:15px;font-weight:600;font-family:'DM Mono',monospace}
+.b-val.green{color:var(--accent)}
+.b-val.red{color:var(--danger)}
+/* Targets */
+.targets-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.targets-card h3{font-size:13px;font-weight:600;margin-bottom:14px}
+.targets-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Forms */
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.5px;margin-bottom:5px;text-transform:uppercase}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-size:14px;padding:9px 12px;transition:border-color .2s}
+.form-input:focus{border-color:var(--accent)}
+textarea.form-input{resize:vertical;min-height:56px;font-size:13px}
+.macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.section-divider{display:flex;align-items:center;gap:8px;margin:8px 0 12px}
+.section-divider span{font-size:11px;color:var(--dim);font-family:'DM Mono',monospace;white-space:nowrap;text-transform:uppercase}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.save-btn{width:100%;padding:12px;background:var(--accent);border:none;border-radius:var(--r2);color:#0a0a0a;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;margin-top:6px}
+.save-btn:hover{background:var(--accent2)}
+.delete-btn{width:100%;padding:10px;background:transparent;border:1px solid #3d1a1a;border-radius:var(--r2);color:var(--danger);font-size:13px;cursor:pointer;transition:all .2s;margin-top:8px}
+.delete-btn:hover{background:#3d1a1a}
+.rice-check-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.rice-check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.rice-check-row label{font-size:13px;color:var(--muted);cursor:pointer}
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-backdrop.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px 16px 0 0;width:100%;max-width:480px;padding:20px 20px 36px;max-height:90vh;overflow-y:auto;transform:translateY(40px);transition:transform .3s ease}
+.modal-backdrop.open .modal{transform:translateY(0)}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-size:18px;line-height:1;padding:2px 8px;border-radius:var(--r2);cursor:pointer}
+/* Bottom bar */
+.summary-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#111;border-top:1px solid var(--border);padding:10px 20px;display:flex;justify-content:space-between;align-items:center}
+.sum-item{text-align:center}
+.sum-val{font-size:14px;font-weight:600;font-family:'DM Mono',monospace;color:var(--accent)}
+.sum-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:#1f2d0a;border:1px solid var(--accent);color:var(--accent);font-size:13px;font-family:'DM Mono',monospace;padding:10px 20px;border-radius:var(--r);transition:transform .3s ease;z-index:999;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <h1>Nitheesh</h1>
+      <p id="dateStr"></p>
+    </div>
+    <button class="reset-btn" onclick="resetDay()">↺ Reset Day</button>
+  </div>
+
+  <div class="macros">
+    <div class="macro-card hl">
+      <div class="label">Calories</div>
+      <div class="value" id="calVal">0</div>
+      <div class="sub" id="calSub">/ 2820 kcal</div>
+      <div class="bar-wrap"><div class="bar" id="calBar" style="width:0%"></div></div>
+    </div>
+    <div class="macro-card hl">
+      <div class="label">Protein</div>
+      <div class="value" id="proVal">0g</div>
+      <div class="sub" id="proSub">/ 155g remaining</div>
+      <div class="bar-wrap"><div class="bar" id="proBar" style="width:0%"></div></div>
+    </div>
+    <div class="macro-card">
+      <div class="label">Carbs</div>
+      <div class="value" id="carbVal">0g</div>
+      <div class="sub" id="carbSub">/ 320g</div>
+      <div class="bar-wrap"><div class="bar" id="carbBar" style="width:0%"></div></div>
+    </div>
+    <div class="macro-card">
+      <div class="label">Fat</div>
+      <div class="value" id="fatVal">0g</div>
+      <div class="sub" id="fatSub">/ 80g</div>
+      <div class="bar-wrap"><div class="bar" id="fatBar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="setTab('meals',this)">Meals</button>
+    <button class="tab-btn" onclick="setTab('whatif',this)">What If?</button>
+    <button class="tab-btn" onclick="setTab('stock',this)">Stock</button>
+    <button class="tab-btn" onclick="setTab('grocery',this)">Grocery</button>
+    <button class="tab-btn" onclick="setTab('budget',this)">Budget</button>
+    <button class="tab-btn" onclick="setTab('targets',this)">Targets</button>
+  </div>
+
+  <div class="content">
+    <!-- MEALS -->
+    <div id="tab-meals">
+      <div id="meal-list"></div>
+      <button class="add-meal-btn" onclick="openAddMeal()">+ Add Meal</button>
+    </div>
+
+    <!-- WHAT IF -->
+    <div id="tab-whatif" style="display:none">
+      <div class="sec-title">What if I eat more?</div>
+      <div class="whatif-card">
+        <div class="whatif-title">Quick Add Calculator</div>
+        <div class="wi-grid">
+          <div class="wi-item"><label>EGGS (whole)</label><input class="wi-input" type="number" id="wi-eggs" placeholder="0" oninput="calcWhatIf()"/></div>
+          <div class="wi-item"><label>RICE (g, cooked)</label><input class="wi-input" type="number" id="wi-rice" placeholder="0" oninput="calcWhatIf()"/></div>
+          <div class="wi-item"><label>CHICKEN (g)</label><input class="wi-input" type="number" id="wi-chicken" placeholder="0" oninput="calcWhatIf()"/></div>
+          <div class="wi-item"><label>SOYA CHUNKS (g dry)</label><input class="wi-input" type="number" id="wi-soya" placeholder="0" oninput="calcWhatIf()"/></div>
+          <div class="wi-item"><label>CHAPATI (pcs)</label><input class="wi-input" type="number" id="wi-chapati" placeholder="0" oninput="calcWhatIf()"/></div>
+          <div class="wi-item"><label>MILK (ml)</label><input class="wi-input" type="number" id="wi-milk" placeholder="0" oninput="calcWhatIf()"/></div>
+        </div>
+        <div class="wi-result" id="wi-result"></div>
+        <button class="wi-btn" onclick="clearWhatIf()">Clear</button>
+      </div>
+    </div>
+
+    <!-- STOCK -->
+    <div id="tab-stock" style="display:none">
+      <div class="sec-title">Grocery Inventory</div>
+      <div id="stock-grid"></div>
+    </div>
+
+    <!-- GROCERY -->
+    <div id="tab-grocery" style="display:none">
+      <div class="sec-title">Grocery List</div>
+      <div class="grocery-period">
+        <button class="period-btn active" onclick="setPeriod('weekly',this)">Weekly</button>
+        <button class="period-btn" onclick="setPeriod('monthly',this)">Monthly</button>
+      </div>
+      <button class="add-grocery-btn" onclick="openAddGrocery()">+ Add Item</button>
+      <div id="grocery-list"></div>
+      <div class="expense-summary">
+        <div class="sec-title" style="margin-top:0">Estimated Expense</div>
+        <div id="exp-rows"></div>
+        <div class="exp-total-row">
+          <span class="exp-total-key">Total</span>
+          <span class="exp-total-val" id="exp-total">₹0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUDGET -->
+    <div id="tab-budget" style="display:none">
+      <div class="sec-title">Daily Budget</div>
+      <div class="budget-card">
+        <div class="b-field"><label>DAILY BUDGET (₹)</label><input class="b-input" type="number" id="dailyBudget" placeholder="e.g. 300" oninput="updateBudget()"/></div>
+        <div class="b-field"><label>AMOUNT SPENT TODAY (₹)</label><input class="b-input" type="number" id="spentBudget" placeholder="e.g. 150" oninput="updateBudget()"/></div>
+      </div>
+      <div class="budget-card" id="budgetSummary" style="display:none">
+        <div class="b-row"><span class="b-key">Daily Budget</span><span class="b-val" id="bTotal">₹0</span></div>
+        <div class="b-row"><span class="b-key">Spent</span><span class="b-val" id="bSpent">₹0</span></div>
+        <div class="prog-wrap"><div class="prog-fill" id="budgetBar" style="width:0%"></div></div>
+        <div style="font-size:11px;color:var(--muted);text-align:right;font-family:'DM Mono',monospace;margin-bottom:6px" id="budgetPct">0% used</div>
+        <div class="b-row" style="border-top:2px solid var(--border);padding-top:10px"><span class="b-key">Remaining</span><span class="b-val green" id="bLeft">₹0</span></div>
+      </div>
+    </div>
+
+    <!-- TARGETS -->
+    <div id="tab-targets" style="display:none">
+      <div class="sec-title">Daily Macro Targets</div>
+      <div class="targets-card">
+        <h3>Edit your daily goals</h3>
+        <div class="targets-grid">
+          <div class="form-row"><label>Calories (kcal)</label><input class="form-input" type="number" id="tgt-cal" oninput="saveTargets()"/></div>
+          <div class="form-row"><label>Protein (g)</label><input class="form-input" type="number" id="tgt-pro" oninput="saveTargets()"/></div>
+          <div class="form-row"><label>Carbs (g)</label><input class="form-input" type="number" id="tgt-carbs" oninput="saveTargets()"/></div>
+          <div class="form-row"><label>Fat (g)</label><input class="form-input" type="number" id="tgt-fat" oninput="saveTargets()"/></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-bar">
+    <div class="sum-item"><div class="sum-val" id="sumMeals">0/6</div><div class="sum-label">Meals</div></div>
+    <div class="sum-item"><div class="sum-val" id="sumCal">0</div><div class="sum-label">kcal</div></div>
+    <div class="sum-item"><div class="sum-val" id="sumPro">0g</div><div class="sum-label">Protein</div></div>
+    <div class="sum-item"><div class="sum-val" id="sumLeft">155g</div><div class="sum-label">Remaining</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Grocery Edit Modal -->
+<div class="modal-backdrop" id="grocery-modal-backdrop" onclick="groceryBackdropClick(event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="grocery-modal-title">Edit Item</span>
+      <button class="modal-close" onclick="closeGroceryModal()">✕</button>
+    </div>
+    <div class="form-row"><label>Item Name</label><input class="form-input" type="text" id="gi-name" placeholder="e.g. Paneer"/></div>
+    <div class="form-row"><label>Unit (g, ml, pcs…)</label><input class="form-input" type="text" id="gi-unit" placeholder="e.g. g"/></div>
+    <div class="form-row"><label>Weekly Quantity</label><input class="form-input" type="number" id="gi-weekqty" placeholder="e.g. 500"/></div>
+    <div class="form-row"><label>Price Label</label><input class="form-input" type="text" id="gi-pricelabel" placeholder="e.g. per 500g pack"/></div>
+    <button class="save-btn" onclick="saveGroceryItem()">Save Item</button>
+    <button class="delete-btn" id="gi-delete-btn" onclick="deleteGroceryItem()">Delete Item</button>
+  </div>
+</div>
+
+<!-- Meal Edit/Add Modal -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="backdropClick(event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modal-title-text">Edit Meal</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-row"><label>Meal Name</label><input class="form-input" type="text" id="edit-name" placeholder="e.g. Meal 1 — Breakfast"/></div>
+    <div class="form-row"><label>Time</label><input class="form-input" type="text" id="edit-time" placeholder="e.g. 6:00 AM"/></div>
+    <div class="form-row"><label>Summary (shown on card)</label><input class="form-input" type="text" id="edit-summary" placeholder="e.g. 2 eggs + 2 chapati"/></div>
+    <div class="section-divider"><span>Total Macros</span></div>
+    <div class="macro-grid">
+      <div class="form-row"><label>Calories (kcal)</label><input class="form-input" type="number" id="edit-cal" placeholder="0"/></div>
+      <div class="form-row"><label>Protein (g)</label><input class="form-input" type="number" id="edit-p" placeholder="0"/></div>
+      <div class="form-row"><label>Carbs (g)</label><input class="form-input" type="number" id="edit-c" placeholder="0"/></div>
+      <div class="form-row"><label>Fat (g)</label><input class="form-input" type="number" id="edit-f" placeholder="0"/></div>
+    </div>
+    <div class="section-divider"><span>Ingredients (for breakdown)</span></div>
+    <div id="ing-edit-list"></div>
+    <button class="wi-btn" style="margin-bottom:14px" onclick="addIngRow()">+ Add Ingredient</button>
+    <button class="save-btn" onclick="saveMeal()">Save Meal</button>
+    <button class="delete-btn" id="delete-btn" onclick="deleteMeal()">Delete Meal</button>
+  </div>
+</div>
+
+<script>
+// Register Service Worker for PWA
+// Temporarily disabled - comment back in after all files upload
+/*
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      console.log('✓ Service Worker registered');
+    }).catch(err=>console.log('Service Worker failed:',err));
+  });
+}
+*/
+
+// ---- Data ----
+// Each ingredient: {name, qty (string like "2 whole" / "250g"), cal, p, c, f}
+const DEFAULT_MEALS = [
+  {
+    id:1, time:'6:00 AM', name:'Meal 1 — Breakfast',
+    summary:'2 eggs + 2 chapati + onion & tomato',
+    cal:400, p:19, c:38, f:15,
+    ingredients:[
+      {name:'Whole Eggs',     qty:'2 pcs',   cal:180, p:15,  c:1,  f:12},
+      {name:'Wheat Chapati',  qty:'2 pcs',   cal:160, p:5,   c:32, f:2},
+      {name:'Onion + Tomato', qty:'~80g',    cal:30,  p:1,   c:7,  f:0.2},
+      {name:'Oil (cooking)',  qty:'3ml',     cal:27,  p:0,   c:0,  f:3}
+    ]
+  },
+  {
+    id:2, time:'9:00 AM', name:'Meal 2 — Mid Meal',
+    summary:'250ml milk + 1 red banana + 20g peanuts',
+    cal:350, p:13, c:39, f:16,
+    ingredients:[
+      {name:'Full-fat Milk',  qty:'250ml',   cal:150, p:8,   c:12, f:8},
+      {name:'Red Banana',     qty:'1 pc (~100g)', cal:110, p:1.4, c:25, f:0.3},
+      {name:'Peanuts',        qty:'20g',     cal:114, p:4.6, c:3,  f:9.6}
+    ]
+  },
+  {
+    id:3, time:'12:30 PM', name:'Meal 3 — Lunch',
+    summary:'50g soya + 250g rice + 150g potato + curd',
+    cal:690, p:32, c:105, f:12,
+    ingredients:[
+      {name:'Soya Chunks (dry)', qty:'50g',  cal:165, p:26,  c:10, f:3},
+      {name:'Cooked Rice',       qty:'250g', cal:325, p:6.8, c:71, f:0.8},
+      {name:'Potato (boiled)',   qty:'150g', cal:115, p:2.4, c:26, f:0.1},
+      {name:'Onion + Tomato',    qty:'~80g', cal:30,  p:1,   c:7,  f:0.2},
+      {name:'Curd (plain)',      qty:'100g', cal:60,  p:3.4, c:4.7,f:3.4},
+      {name:'Oil (cooking)',     qty:'5ml',  cal:45,  p:0,   c:0,  f:5}
+    ]
+  },
+  {
+    id:4, time:'3:30 PM', name:'Meal 4 — Evening',
+    summary:'3 whole eggs + onion & tomato',
+    cal:290, p:20, c:6, f:17,
+    ingredients:[
+      {name:'Whole Eggs',     qty:'3 pcs',  cal:270, p:22.5,c:1.5,f:18},
+      {name:'Onion + Tomato', qty:'~80g',   cal:30,  p:1,   c:7,  f:0.2}
+    ]
+  },
+  {
+    id:5, time:'6:15 PM', name:'Meal 5 — Pre Workout',
+    summary:'2 chapati + 200g potato',
+    cal:330, p:8, c:58, f:5,
+    ingredients:[
+      {name:'Wheat Chapati',  qty:'2 pcs',  cal:160, p:5,   c:32, f:2},
+      {name:'Potato (boiled)',qty:'200g',   cal:154, p:3.2, c:34, f:0.2},
+      {name:'Oil / Ghee',     qty:'3ml',    cal:27,  p:0,   c:0,  f:3}
+    ]
+  },
+  {
+    id:6, time:'8:45 PM', name:'Meal 6 — Post Workout',
+    summary:'100g chicken + 60g liver + 50g soya + 250g rice + curd',
+    cal:760, p:64, c:75, f:15,
+    ingredients:[
+      {name:'Chicken Breast', qty:'100g',   cal:165, p:31,  c:0,  f:3.6},
+      {name:'Chicken Liver',  qty:'60g',    cal:87,  p:15.6,c:0.6,f:2.4},
+      {name:'Soya Chunks (dry)', qty:'50g', cal:165, p:26,  c:10, f:3},
+      {name:'Cooked Rice',    qty:'250g',   cal:325, p:6.8, c:71, f:0.8},
+      {name:'Curd (plain)',   qty:'100g',   cal:60,  p:3.4, c:4.7,f:3.4},
+      {name:'Oil (cooking)',  qty:'5ml',    cal:45,  p:0,   c:0,  f:5}
+    ]
+  }
+];
+
+const DEFAULT_TARGETS = {cal:2820, pro:155, carbs:320, fat:80};
+
+const WI_FOODS={
+  eggs:{cal:90,p:7.5,c:1,f:6}, rice:{cal:1.3,p:0.027,c:0.28,f:0.003},
+  chicken:{cal:1.65,p:0.31,c:0,f:0.035}, soya:{cal:3.3,p:0.52,c:0.21,f:0.06},
+  chapati:{cal:120,p:3.5,c:22,f:2.5}, milk:{cal:0.64,p:0.032,c:0.048,f:0.032}
+};
+
+const STOCK_ITEMS=[
+  {key:'eggs',label:'Eggs',unit:'pcs',low:5},
+  {key:'milk',label:'Milk',unit:'ml',low:500},
+  {key:'rice',label:'Rice',unit:'g dry',low:500},
+  {key:'soya',label:'Soya Chunks',unit:'g',low:100},
+  {key:'chicken',label:'Chicken',unit:'g',low:200},
+  {key:'liver',label:'Chicken Liver',unit:'g',low:100},
+  {key:'potato',label:'Potato',unit:'pcs',low:3},
+  {key:'flour',label:'Chapati Flour',unit:'g',low:300},
+  {key:'banana',label:'Red Banana',unit:'pcs',low:3},
+  {key:'peanuts',label:'Peanuts',unit:'g',low:50},
+  {key:'curd',label:'Curd',unit:'g',low:100},
+  {key:'onion',label:'Onion',unit:'pcs',low:3},
+  {key:'tomato',label:'Tomato',unit:'pcs',low:3},
+  {key:'oil',label:'Cooking Oil',unit:'ml',low:100}
+];
+
+const GROCERY_ITEMS=[
+  {key:'eggs',   label:'Eggs',           weekQty:35,  unit:'pcs', priceUnit:'per 12 eggs'},
+  {key:'milk',   label:'Milk',           weekQty:1750,unit:'ml',  priceUnit:'per 500ml'},
+  {key:'rice',   label:'Rice (dry)',     weekQty:2450,unit:'g',   priceUnit:'per 1kg'},
+  {key:'soya',   label:'Soya Chunks',   weekQty:700, unit:'g',   priceUnit:'per 200g pack'},
+  {key:'chicken',label:'Chicken',        weekQty:700, unit:'g',   priceUnit:'per kg'},
+  {key:'liver',  label:'Chicken Liver', weekQty:420, unit:'g',   priceUnit:'per 500g'},
+  {key:'potato', label:'Potato',         weekQty:28,  unit:'pcs', priceUnit:'per kg (~10 pcs)'},
+  {key:'flour',  label:'Chapati Flour', weekQty:700, unit:'g',   priceUnit:'per kg'},
+  {key:'banana', label:'Red Banana',    weekQty:7,   unit:'pcs', priceUnit:'per dozen'},
+  {key:'peanuts',label:'Peanuts',        weekQty:140, unit:'g',   priceUnit:'per 500g pack'},
+  {key:'curd',   label:'Curd',           weekQty:1400,unit:'g',   priceUnit:'per 500g pack'},
+  {key:'onion',  label:'Onion',          weekQty:21,  unit:'pcs', priceUnit:'per kg (~7 pcs)'},
+  {key:'tomato', label:'Tomato',         weekQty:21,  unit:'pcs', priceUnit:'per kg (~14 pcs)'},
+  {key:'oil',    label:'Cooking Oil',   weekQty:200, unit:'ml',  priceUnit:'per litre'},
+  {key:'spices', label:'Salt & Spices', weekQty:1,   unit:'set', priceUnit:'per week estimate'}
+];
+
+// ---- State ----
+let MEALS=[], TARGETS={};
+let nextId=100;
+let state={checked:{},stock:{},budget:{daily:'',spent:''},prices:{},groceryPeriod:'weekly'};
+
+function load(){
+  // Use version key nm_v4 to bust old cache
+  const today=new Date().toDateString();
+  const saved=localStorage.getItem('nm_v4');
+  if(saved){
+    const d=JSON.parse(saved);
+    if(d.date===today) state.checked=d.checked||{};
+    state.stock=d.stock||{};
+    state.budget=d.budget||{daily:'',spent:''};
+    state.prices=d.prices||{};
+    state.groceryPeriod=d.groceryPeriod||'weekly';
+    state.groceryItems=d.groceryItems||null;
+    MEALS=d.meals?JSON.parse(JSON.stringify(d.meals)):JSON.parse(JSON.stringify(DEFAULT_MEALS));
+    TARGETS=d.targets?{...d.targets}:{...DEFAULT_TARGETS};
+  } else {
+    MEALS=JSON.parse(JSON.stringify(DEFAULT_MEALS));
+    TARGETS={...DEFAULT_TARGETS};
+  }
+  nextId=MEALS.reduce((m,x)=>Math.max(m,x.id),0)+1;
+}
+
+function save(){
+  localStorage.setItem('nm_v4',JSON.stringify({
+    date:new Date().toDateString(),
+    checked:state.checked,stock:state.stock,budget:state.budget,
+    prices:state.prices,groceryPeriod:state.groceryPeriod,
+    groceryItems:state.groceryItems||null,
+    meals:MEALS,targets:TARGETS
+  }));
+}
+
+// ---- Meals render ----
+let expandedMeal = null;
+
+function renderMeals(){
+  document.getElementById('meal-list').innerHTML=MEALS.map(m=>{
+    const done=state.checked[m.id];
+    const isOpen=expandedMeal===m.id;
+    return`<div class="meal-card ${done?'done':''}" id="mc${m.id}">
+      <div class="meal-top" onclick="toggleExpand(${m.id})">
+        <div class="chk" onclick="event.stopPropagation();toggle(${m.id})">
+          <svg class="chk-svg" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#0a0a0a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="meal-info">
+          <div class="meal-header">
+            <span class="meal-name">${m.name}<span class="expand-arrow" id="arr-${m.id}" style="transform:rotate(${isOpen?90:0}deg)">▶</span></span>
+            <span class="meal-time">${m.time}</span>
+          </div>
+          <div class="meal-summary">${m.summary||m.foods||''}</div>
+          <div class="macro-pills">
+            <span class="pill cal">${m.cal} kcal</span>
+            <span class="pill">${m.p}g P</span>
+            <span class="pill">${m.c}g C</span>
+            <span class="pill">${m.f}g F</span>
+          </div>
+        </div>
+        <div class="meal-actions">
+          <button class="edit-btn" onclick="event.stopPropagation();openEditMeal(${m.id})">edit</button>
+        </div>
+      </div>
+      <div class="meal-detail ${isOpen?'open':''}" id="detail-${m.id}">
+        ${renderIngTable(m)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderIngTable(m){
+  if(!m.ingredients||m.ingredients.length===0){
+    return`<p style="font-size:13px;color:var(--dim);padding-top:8px">No ingredients added. Tap edit to add them.</p>`;
+  }
+  const rows=m.ingredients.map(i=>`
+    <tr>
+      <td>${i.name}<span class="qty">${i.qty}</span></td>
+      <td class="cal-col">${i.cal}</td>
+      <td>${i.p}g</td>
+      <td>${i.c}g</td>
+      <td>${i.f}g</td>
+    </tr>`).join('');
+  return`<table class="ing-table">
+    <thead><tr>
+      <th>Ingredient</th><th>kcal</th><th>Prot</th><th>Carb</th><th>Fat</th>
+    </tr></thead>
+    <tbody>
+      ${rows}
+      <tr class="total-row">
+        <td>TOTAL</td>
+        <td class="cal-col">${m.cal}</td>
+        <td>${m.p}g</td>
+        <td>${m.c}g</td>
+        <td>${m.f}g</td>
+      </tr>
+    </tbody>
+  </table>`;
+}
+
+function toggleExpand(id){
+  expandedMeal = expandedMeal===id ? null : id;
+  renderMeals();
+}
+
+function toggle(id){
+  state.checked[id]=!state.checked[id];
+  save(); renderMeals(); updateMacros();
+  if(state.checked[id]) showToast('Meal logged ✓');
+}
+
+function updateMacros(){
+  let cal=0,p=0,c=0,f=0;
+  MEALS.forEach(m=>{if(state.checked[m.id]){cal+=m.cal;p+=m.p;c+=m.c;f+=m.f;}});
+  p=Math.round(p*10)/10;
+  const done=Object.values(state.checked).filter(Boolean).length;
+  const proLeft=Math.max(0,Math.round((TARGETS.pro-p)*10)/10);
+  document.getElementById('calVal').textContent=Math.round(cal);
+  document.getElementById('proVal').textContent=p+'g';
+  document.getElementById('carbVal').textContent=Math.round(c)+'g';
+  document.getElementById('fatVal').textContent=Math.round(f)+'g';
+  document.getElementById('calSub').textContent='/ '+TARGETS.cal+' kcal';
+  document.getElementById('proSub').textContent='/ '+proLeft+'g remaining';
+  document.getElementById('carbSub').textContent='/ '+TARGETS.carbs+'g';
+  document.getElementById('fatSub').textContent='/ '+TARGETS.fat+'g';
+  document.getElementById('calBar').style.width=Math.min(100,Math.round(cal/TARGETS.cal*100))+'%';
+  document.getElementById('proBar').style.width=Math.min(100,Math.round(p/TARGETS.pro*100))+'%';
+  document.getElementById('carbBar').style.width=Math.min(100,Math.round(c/TARGETS.carbs*100))+'%';
+  document.getElementById('fatBar').style.width=Math.min(100,Math.round(f/TARGETS.fat*100))+'%';
+  document.getElementById('sumMeals').textContent=done+'/'+MEALS.length;
+  document.getElementById('sumCal').textContent=Math.round(cal);
+  document.getElementById('sumPro').textContent=p+'g';
+  document.getElementById('sumLeft').textContent=proLeft+'g';
+}
+
+// ---- Meal modal + ingredient rows ----
+let editingId=null;
+let ingRows=[];
+
+function openEditMeal(id){
+  const m=MEALS.find(x=>x.id===id);
+  if(!m) return;
+  editingId=id;
+  document.getElementById('modal-title-text').textContent='Edit Meal';
+  document.getElementById('delete-btn').style.display='block';
+  document.getElementById('edit-name').value=m.name;
+  document.getElementById('edit-time').value=m.time;
+  document.getElementById('edit-summary').value=m.summary||m.foods||'';
+  document.getElementById('edit-cal').value=m.cal;
+  document.getElementById('edit-p').value=m.p;
+  document.getElementById('edit-c').value=m.c;
+  document.getElementById('edit-f').value=m.f;
+  ingRows=m.ingredients?JSON.parse(JSON.stringify(m.ingredients)):[];
+  renderIngEdit();
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function openAddMeal(){
+  editingId=null;
+  document.getElementById('modal-title-text').textContent='Add Meal';
+  document.getElementById('delete-btn').style.display='none';
+  ['edit-name','edit-time','edit-summary','edit-cal','edit-p','edit-c','edit-f'].forEach(id=>document.getElementById(id).value='');
+  ingRows=[];
+  renderIngEdit();
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function renderIngEdit(){
+  document.getElementById('ing-edit-list').innerHTML=ingRows.map((r,i)=>`
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px;margin-bottom:8px">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input class="form-input" style="flex:2" placeholder="Ingredient name" value="${r.name||''}" oninput="ingRows[${i}].name=this.value"/>
+        <input class="form-input" style="flex:1" placeholder="Qty" value="${r.qty||''}" oninput="ingRows[${i}].qty=this.value"/>
+        <button onclick="removeIng(${i})" style="background:#3d1a1a;border:none;border-radius:4px;color:var(--danger);padding:0 10px;cursor:pointer;flex-shrink:0">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+        <div><div style="font-size:10px;color:var(--dim);margin-bottom:3px;font-family:'DM Mono',monospace">KCAL</div><input class="form-input" style="padding:6px 8px;font-size:13px" type="number" value="${r.cal||''}" placeholder="0" oninput="ingRows[${i}].cal=parseFloat(this.value)||0"/></div>
+        <div><div style="font-size:10px;color:var(--dim);margin-bottom:3px;font-family:'DM Mono',monospace">PROT</div><input class="form-input" style="padding:6px 8px;font-size:13px" type="number" value="${r.p||''}" placeholder="0" oninput="ingRows[${i}].p=parseFloat(this.value)||0"/></div>
+        <div><div style="font-size:10px;color:var(--dim);margin-bottom:3px;font-family:'DM Mono',monospace">CARB</div><input class="form-input" style="padding:6px 8px;font-size:13px" type="number" value="${r.c||''}" placeholder="0" oninput="ingRows[${i}].c=parseFloat(this.value)||0"/></div>
+        <div><div style="font-size:10px;color:var(--dim);margin-bottom:3px;font-family:'DM Mono',monospace">FAT</div><input class="form-input" style="padding:6px 8px;font-size:13px" type="number" value="${r.f||''}" placeholder="0" oninput="ingRows[${i}].f=parseFloat(this.value)||0"/></div>
+      </div>
+    </div>`).join('');
+}
+
+function addIngRow(){
+  ingRows.push({name:'',qty:'',cal:0,p:0,c:0,f:0});
+  renderIngEdit();
+}
+
+function removeIng(i){
+  ingRows.splice(i,1);
+  renderIngEdit();
+}
+
+function backdropClick(e){if(e.target===document.getElementById('modal-backdrop'))closeModal();}
+function closeModal(){document.getElementById('modal-backdrop').classList.remove('open');document.body.style.overflow='';}
+
+function saveMeal(){
+  const name=document.getElementById('edit-name').value.trim();
+  if(!name){showToast('Name required');return;}
+  const meal={
+    name,
+    time:document.getElementById('edit-time').value.trim(),
+    summary:document.getElementById('edit-summary').value.trim(),
+    cal:parseFloat(document.getElementById('edit-cal').value)||0,
+    p:parseFloat(document.getElementById('edit-p').value)||0,
+    c:parseFloat(document.getElementById('edit-c').value)||0,
+    f:parseFloat(document.getElementById('edit-f').value)||0,
+    ingredients:JSON.parse(JSON.stringify(ingRows))
+  };
+  if(editingId!==null){
+    const idx=MEALS.findIndex(x=>x.id===editingId);
+    if(idx>=0) MEALS[idx]={...MEALS[idx],...meal};
+    showToast('Meal updated ✓');
+  } else {
+    MEALS.push({id:nextId++,...meal});
+    showToast('Meal added ✓');
+  }
+  save(); renderMeals(); updateMacros(); closeModal();
+}
+
+function deleteMeal(){
+  if(!confirm('Delete this meal?')) return;
+  MEALS=MEALS.filter(m=>m.id!==editingId);
+  delete state.checked[editingId];
+  save(); renderMeals(); updateMacros(); closeModal();
+  showToast('Meal deleted');
+}
+
+// ---- Targets ----
+function saveTargets(){
+  TARGETS.cal=parseFloat(document.getElementById('tgt-cal').value)||DEFAULT_TARGETS.cal;
+  TARGETS.pro=parseFloat(document.getElementById('tgt-pro').value)||DEFAULT_TARGETS.pro;
+  TARGETS.carbs=parseFloat(document.getElementById('tgt-carbs').value)||DEFAULT_TARGETS.carbs;
+  TARGETS.fat=parseFloat(document.getElementById('tgt-fat').value)||DEFAULT_TARGETS.fat;
+  save(); updateMacros();
+}
+
+// ---- What If ----
+function calcWhatIf(){
+  let addCal=0,addP=0,addC=0,addF=0;
+  const inputs={
+    eggs:parseFloat(document.getElementById('wi-eggs').value)||0,
+    rice:parseFloat(document.getElementById('wi-rice').value)||0,
+    chicken:parseFloat(document.getElementById('wi-chicken').value)||0,
+    soya:parseFloat(document.getElementById('wi-soya').value)||0,
+    chapati:parseFloat(document.getElementById('wi-chapati').value)||0,
+    milk:parseFloat(document.getElementById('wi-milk').value)||0
+  };
+  Object.entries(inputs).forEach(([k,v])=>{if(v>0){addCal+=v*WI_FOODS[k].cal;addP+=v*WI_FOODS[k].p;addC+=v*WI_FOODS[k].c;addF+=v*WI_FOODS[k].f;}});
+  const res=document.getElementById('wi-result');
+  if(!Object.values(inputs).some(v=>v>0)){res.classList.remove('show');return;}
+  let curCal=0,curP=0;
+  MEALS.forEach(m=>{if(state.checked[m.id]){curCal+=m.cal;curP+=m.p;}});
+  const newCal=Math.round(curCal+addCal),newP=Math.round((curP+addP)*10)/10;
+  const proLeft=Math.max(0,Math.round((TARGETS.pro-newP)*10)/10);
+  const calLeft=Math.max(0,TARGETS.cal-newCal);
+  res.innerHTML=`+${Math.round(addCal)} kcal  +${Math.round(addP*10)/10}g protein  +${Math.round(addC)}g carbs<br>─────────────────────────────<br>New total: ${newCal} kcal / ${TARGETS.cal}<br>Protein:   ${newP}g / ${TARGETS.pro}g${proLeft>0?' ('+proLeft+'g left)':' ✓ MET'}<br>Calories:  ${calLeft>0?calLeft+' kcal remaining':newCal>TARGETS.cal?'Over by '+(newCal-TARGETS.cal)+' kcal':'✓ On target'}`;
+  res.classList.add('show');
+}
+function clearWhatIf(){
+  ['eggs','rice','chicken','soya','chapati','milk'].forEach(k=>document.getElementById('wi-'+k).value='');
+  document.getElementById('wi-result').classList.remove('show');
+}
+
+// ---- Stock ----
+function renderStock(){
+  document.getElementById('stock-grid').innerHTML=STOCK_ITEMS.map(item=>{
+    const qty=state.stock[item.key]||'';
+    const low=qty!==''&&parseFloat(qty)<item.low;
+    return`<div class="stock-item"><span class="stock-label">${item.label}</span>${low?'<span class="low-badge">Low</span>':''}<span class="stock-unit">${item.unit}</span><input class="stock-input" type="number" value="${qty}" placeholder="—" oninput="updateStock('${item.key}',this.value)"/></div>`;
+  }).join('');
+}
+function updateStock(key,val){state.stock[key]=val;save();renderStock();}
+
+// ---- Grocery ----
+let groceryPeriod='weekly';
+let editingGroceryKey=null;
+
+function getGroceryItems(){return state.groceryItems?state.groceryItems:JSON.parse(JSON.stringify(GROCERY_ITEMS));}
+
+function setPeriod(p,btn){
+  groceryPeriod=p;state.groceryPeriod=p;save();
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderGrocery();
+}
+
+function renderGrocery(){
+  const mult=groceryPeriod==='monthly'?4.33:1;
+  const label=groceryPeriod==='monthly'?'/month':'/week';
+  const items=getGroceryItems();
+  document.getElementById('grocery-list').innerHTML=items.map(item=>{
+    const displayQty=Math.round(item.weekQty*mult);
+    const price=state.prices[item.key]||'';
+    return`<div class="grocery-item">
+      <div class="gi-top">
+        <span class="gi-name">${item.label}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:4px">
+            <input style="width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--accent);font-size:12px;font-family:'DM Mono',monospace;padding:3px 6px;text-align:right;transition:border-color .2s"
+              type="number" value="${displayQty}"
+              oninput="updateGroceryQty('${item.key}',this.value,'${groceryPeriod}')"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">${item.unit} ${label}</span>
+          </div>
+          <button class="gi-edit-btn" onclick="openEditGrocery('${item.key}')">edit</button>
+        </div>
+      </div>
+      <div class="gi-bottom">
+        <label>Price (${item.priceUnit})</label>
+        <span style="font-size:12px;color:var(--dim);margin-right:4px">₹</span>
+        <input class="price-input" type="number" value="${price}" placeholder="0" oninput="updatePrice('${item.key}',this.value)"/>
+      </div>
+    </div>`;
+  }).join('');
+  updateExpense();
+}
+
+function updateGroceryQty(key,displayVal,period){
+  const mult=period==='monthly'?4.33:1;
+  const weekQty=Math.round(parseFloat(displayVal)||0)/mult;
+  if(!state.groceryItems) state.groceryItems=JSON.parse(JSON.stringify(GROCERY_ITEMS));
+  const item=state.groceryItems.find(x=>x.key===key);
+  if(item) item.weekQty=weekQty;
+  save(); updateExpense();
+}
+
+function openEditGrocery(key){
+  const item=getGroceryItems().find(x=>x.key===key);
+  if(!item) return;
+  editingGroceryKey=key;
+  document.getElementById('grocery-modal-title').textContent='Edit Item';
+  document.getElementById('gi-delete-btn').style.display='block';
+  document.getElementById('gi-name').value=item.label;
+  document.getElementById('gi-unit').value=item.unit;
+  document.getElementById('gi-weekqty').value=item.weekQty;
+  document.getElementById('gi-pricelabel').value=item.priceUnit;
+  document.getElementById('grocery-modal-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function openAddGrocery(){
+  editingGroceryKey=null;
+  document.getElementById('grocery-modal-title').textContent='Add Item';
+  document.getElementById('gi-delete-btn').style.display='none';
+  ['gi-name','gi-unit','gi-weekqty','gi-pricelabel'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('grocery-modal-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function groceryBackdropClick(e){if(e.target===document.getElementById('grocery-modal-backdrop'))closeGroceryModal();}
+function closeGroceryModal(){document.getElementById('grocery-modal-backdrop').classList.remove('open');document.body.style.overflow='';}
+
+function saveGroceryItem(){
+  const label=document.getElementById('gi-name').value.trim();
+  if(!label){showToast('Name required');return;}
+  if(!state.groceryItems) state.groceryItems=JSON.parse(JSON.stringify(GROCERY_ITEMS));
+  const obj={label,unit:document.getElementById('gi-unit').value.trim()||'g',weekQty:parseFloat(document.getElementById('gi-weekqty').value)||0,priceUnit:document.getElementById('gi-pricelabel').value.trim()||'per unit'};
+  if(editingGroceryKey){
+    const idx=state.groceryItems.findIndex(x=>x.key===editingGroceryKey);
+    if(idx>=0) state.groceryItems[idx]={...state.groceryItems[idx],...obj};
+    showToast('Item updated ✓');
+  } else {
+    state.groceryItems.push({key:'custom_'+Date.now(),...obj});
+    showToast('Item added ✓');
+  }
+  save();renderGrocery();closeGroceryModal();
+}
+
+function deleteGroceryItem(){
+  if(!confirm('Remove this item?')) return;
+  if(!state.groceryItems) state.groceryItems=JSON.parse(JSON.stringify(GROCERY_ITEMS));
+  state.groceryItems=state.groceryItems.filter(x=>x.key!==editingGroceryKey);
+  delete state.prices[editingGroceryKey];
+  save();renderGrocery();closeGroceryModal();showToast('Item removed');
+}
+
+function updatePrice(key,val){state.prices[key]=parseFloat(val)||0;save();updateExpense();}
+
+function updateExpense(){
+  const mult=groceryPeriod==='monthly'?4.33:1;let total=0;
+  const rows=getGroceryItems().map(item=>{
+    const qty=item.weekQty*mult,price=state.prices[item.key]||0;
+    if(!price) return null;
+    let cost=0,k=item.key;
+    if(k==='eggs') cost=price*Math.ceil(qty/12);
+    else if(k==='milk') cost=price*Math.ceil(qty/500);
+    else if(k==='rice'||k==='flour') cost=price*(qty/1000);
+    else if(k==='soya') cost=price*Math.ceil(qty/200);
+    else if(k==='chicken') cost=price*(qty/1000);
+    else if(k==='liver') cost=price*Math.ceil(qty/500);
+    else if(k==='potato'||k==='onion') cost=price*(qty/700);
+    else if(k==='tomato') cost=price*(qty/800);
+    else if(k==='spinach') cost=price*Math.ceil(qty/250);
+    else if(k==='oil') cost=price*(qty/1000);
+    else if(k==='peanuts') cost=price*Math.ceil(qty/500);
+    else if(k==='curd') cost=price*Math.ceil(qty/500);
+    else if(k==='banana') cost=price*(qty/12);
+    else if(k==='spices') cost=price*mult;
+    else cost=price*(qty/100);
+    cost=Math.round(cost);total+=cost;
+    return{label:item.label,cost};
+  }).filter(Boolean);
+  document.getElementById('exp-rows').innerHTML=rows.map(r=>`<div class="exp-row"><span class="exp-key">${r.label}</span><span class="exp-val">₹${r.cost}</span></div>`).join('');
+  document.getElementById('exp-total').textContent='₹'+Math.round(total);
+}
+
+// ---- Budget ----
+function updateBudget(){
+  const daily=parseFloat(document.getElementById('dailyBudget').value)||0;
+  const spent=parseFloat(document.getElementById('spentBudget').value)||0;
+  state.budget={daily:document.getElementById('dailyBudget').value,spent:document.getElementById('spentBudget').value};
+  save();
+  const summary=document.getElementById('budgetSummary');
+  if(daily>0){
+    summary.style.display='block';
+    const pct=Math.min(100,Math.round(spent/daily*100)),left=Math.max(0,daily-spent);
+    document.getElementById('bTotal').textContent='₹'+daily;
+    document.getElementById('bSpent').textContent='₹'+spent;
+    document.getElementById('bLeft').textContent='₹'+Math.round(left);
+    document.getElementById('bLeft').className='b-val '+(left>0?'green':'red');
+    document.getElementById('budgetPct').textContent=pct+'% used';
+    const bar=document.getElementById('budgetBar');
+    bar.style.width=pct+'%';
+    bar.className='prog-fill'+(pct>90?' danger':pct>70?' warn':'');
+  } else summary.style.display='none';
+}
+
+// ---- Tabs ----
+function setTab(name,btn){
+  ['meals','whatif','stock','grocery','budget','targets'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===name?'block':'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(name==='stock') renderStock();
+  if(name==='grocery') renderGrocery();
+}
+
+function resetDay(){
+  if(!confirm('Reset today\'s check-ins?')) return;
+  state.checked={};save();renderMeals();updateMacros();showToast('Day reset ✓');
+}
+
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+// ---- Init ----
+load();
+document.getElementById('dateStr').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+document.getElementById('tgt-cal').value=TARGETS.cal;
+document.getElementById('tgt-pro').value=TARGETS.pro;
+document.getElementById('tgt-carbs').value=TARGETS.carbs;
+document.getElementById('tgt-fat').value=TARGETS.fat;
+renderMeals();
+updateMacros();
+if(state.budget.daily) document.getElementById('dailyBudget').value=state.budget.daily;
+if(state.budget.spent) document.getElementById('spentBudget').value=state.budget.spent;
+updateBudget();
+groceryPeriod=state.groceryPeriod||'weekly';
+</script>
+</body>
+</html>
